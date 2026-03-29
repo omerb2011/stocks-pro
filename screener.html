@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>סקרינר מניות</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+Hebrew:wght@300;400;500&display=swap');
+
+:root {
+  --bg: #07090f;
+  --s1: #0d1117;
+  --s2: #141b27;
+  --s3: #1c2535;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.13);
+  --text: #dde4f0;
+  --muted: #556070;
+  --muted2: #8a9ab5;
+  --green: #10b981;
+  --green2: rgba(16,185,129,0.15);
+  --red: #ef4444;
+  --red2: rgba(239,68,68,0.15);
+  --amber: #f59e0b;
+  --amber2: rgba(245,158,11,0.15);
+  --cyan: #22d3ee;
+  --cyan2: rgba(34,211,238,0.1);
+  --indigo: #818cf8;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans Hebrew', sans-serif;
+  min-height: 100vh;
+  direction: rtl;
+  overflow-x: hidden;
+}
+
+/* HEADER */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(7,9,15,0.97);
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  backdrop-filter: blur(12px);
+}
+
+.brand {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--cyan);
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.brand span { color: var(--muted2); font-weight: 400; }
+
+.search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 400px;
+  background: var(--s2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 0 12px;
+  transition: border-color 0.2s;
+}
+
+.search-wrap:focus-within { border-color: var(--cyan); }
+
+.search-wrap input {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  padding: 9px 0;
+  width: 100%;
+  direction: ltr;
+}
+
+.search-wrap input::placeholder { color: var(--muted); }
+
+.search-ico { color: var(--muted); font-size: 14px; }
+
+.add-btn {
+  background: var(--cyan);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: #07090f;
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.add-btn:hover { background: #67e8f9; transform: translateY(-1px); }
+.add-btn:active { transform: scale(0.97); }
+
+.alert-btn {
+  background: var(--s2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 8px 14px;
+  color: var(--amber);
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  position: relative;
+}
+.alert-btn:hover { border-color: var(--amber); }
+
+.alert-badge {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  background: var(--amber);
+  color: #07090f;
+  font-size: 9px;
+  font-weight: 700;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* LAYOUT */
+.layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  height: calc(100vh - 53px);
+}
+
+/* SIDEBAR */
+.sidebar {
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--s1);
+}
+
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--s3); border-radius: 2px; }
+
+.sidebar-head {
+  padding: 14px 16px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background: var(--s1);
+  z-index: 10;
+  border-bottom: 1px solid var(--border);
+}
+
+.label-xs {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.count-badge {
+  background: var(--s3);
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted2);
+}
+
+.stock-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative;
+  gap: 8px;
+  align-items: center;
+}
+
+.stock-row:hover { background: var(--s2); }
+.stock-row.active { background: var(--s3); }
+.stock-row.active::before {
+  content: '';
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--cyan);
+}
+
+.stock-row-left { min-width: 0; }
+
+.row-ticker {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.alert-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--amber);
+  flex-shrink: 0;
+}
+
+.row-name {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-right { text-align: left; }
+
+.row-price {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.row-chg {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  margin-top: 2px;
+  text-align: left;
+}
+
+.row-del {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 0;
+  background: var(--red2);
+  overflow: hidden;
+  transition: width 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.stock-row:hover .row-del { width: 36px; }
+.row-del span { color: var(--red); font-size: 16px; }
+
+/* MAIN CONTENT */
+.main-content {
+  overflow-y: auto;
+  background: var(--bg);
+  padding: 24px;
+}
+
+.main-content::-webkit-scrollbar { width: 4px; }
+.main-content::-webkit-scrollbar-track { background: transparent; }
+.main-content::-webkit-scrollbar-thumb { background: var(--s3); border-radius: 2px; }
+
+.empty-main {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--muted);
+}
+
+.empty-icon { font-size: 48px; }
+.empty-main p { font-size: 14px; }
+
+/* DETAIL */
+.detail-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+
+.detail-left h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.detail-left .sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--muted2);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.tag {
+  background: var(--s2);
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-size: 10px;
+  color: var(--muted2);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.detail-right { text-align: left; }
+
+.big-price {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.big-chg {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  margin-top: 5px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.chg-pill {
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* FUNDAMENTALS GRID */
+.fund-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.fund-card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: border-color 0.2s;
+}
+
+.fund-card:hover { border-color: var(--border2); }
+
+.fund-label {
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.5px;
+}
+
+.fund-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* CHART PANEL */
+.chart-panel {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 16px 10px;
+  margin-bottom: 20px;
+}
+
+.chart-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  direction: ltr;
+}
+
+.range-group { display: flex; gap: 4px; }
+
+.rtab {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rtab.active, .rtab:hover {
+  background: var(--cyan2);
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.chart-stats {
+  display: flex;
+  gap: 16px;
+  direction: ltr;
+}
+
+.cstat { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted2); }
+.cstat span { color: var(--text); font-weight: 500; }
+
+.chart-box { height: 220px; position: relative; }
+
+/* ALERTS PANEL */
+.alerts-panel {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.panel-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.add-alert-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.add-alert-form select,
+.add-alert-form input {
+  background: var(--s2);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.add-alert-form select:focus,
+.add-alert-form input:focus { border-color: var(--amber); }
+
+.add-alert-form input[type=number] { width: 100px; direction: ltr; }
+
+.mini-btn {
+  background: var(--amber2);
+  border: 1px solid var(--amber);
+  border-radius: 7px;
+  padding: 7px 12px;
+  color: var(--amber);
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.mini-btn:hover { background: var(--amber); color: #07090f; }
+
+.alerts-list { display: flex; flex-direction: column; gap: 8px; }
+
+.alert-item {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.alert-item.triggered {
+  border-color: var(--amber);
+  background: var(--amber2);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(245,158,11,0); }
+}
+
+.alert-info { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+
+.alert-type-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.badge-above { background: var(--green2); color: var(--green); border: 1px solid var(--green); }
+.badge-below { background: var(--red2); color: var(--red); border: 1px solid var(--red); }
+
+.alert-desc {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--muted2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.alert-desc strong { color: var(--text); }
+
+.del-alert {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.del-alert:hover { background: var(--red2); color: var(--red); }
+
+.triggered-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--amber);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* NEWS */
+.news-panel {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.news-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.news-item:last-child { border-bottom: none; padding-bottom: 0; }
+.news-item:first-child { padding-top: 0; }
+
+.news-src {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 1px;
+  white-space: nowrap;
+  width: 50px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.news-body {}
+
+.news-title {
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 3px;
+  color: var(--text);
+}
+
+.news-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* SENTIMENT BAR */
+.sentiment-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.sent-label { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+.sent-track {
+  flex: 1;
+  height: 6px;
+  background: var(--s3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.sent-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s;
+}
+
+.sent-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* MODAL */
+.modal-bg {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.modal-bg.open { display: flex; }
+
+.modal {
+  background: var(--s1);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 24px;
+  width: 90%;
+  max-width: 480px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.all-alerts-list { display: flex; flex-direction: column; gap: 8px; }
+
+.modal-close {
+  display: block;
+  margin-top: 16px;
+  background: none;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 8px;
+  color: var(--muted2);
+  cursor: pointer;
+  font-family: 'Noto Sans Hebrew', sans-serif;
+  font-size: 13px;
+  width: 100%;
+}
+
+.modal-close:hover { border-color: var(--text); color: var(--text); }
+
+/* TOAST */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--s2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 13px;
+  opacity: 0;
+  transition: all 0.3s;
+  z-index: 999;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.pos { color: var(--green); }
+.neg { color: var(--red); }
+
+@media (max-width: 768px) {
+  .layout { grid-template-columns: 1fr; grid-template-rows: 200px 1fr; }
+  .sidebar { border-left: none; border-bottom: 1px solid var(--border); }
+  .fund-grid { grid-template-columns: repeat(2,1fr); }
+  .header { flex-wrap: wrap; gap: 8px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="brand">SCREENER<span>.PRO</span></div>
+  <div class="search-wrap">
+    <span class="search-ico">⌕</span>
+    <input type="text" id="searchInput" placeholder="הוסף מניה: AAPL, TSLA, NVDA..." />
+  </div>
+  <button class="add-btn" onclick="addStock()">+ הוסף</button>
+  <button class="alert-btn" onclick="openAlertsModal()">
+    🔔 התראות
+    <div class="alert-badge" id="alertBadge" style="display:none">0</div>
+  </button>
+</div>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-head">
+      <span class="label-xs">מעקב</span>
+      <span class="count-badge" id="countBadge">0</span>
+    </div>
+    <div id="stockList"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-content" id="mainContent">
+    <div class="empty-main" id="emptyState">
+      <div class="empty-icon">📊</div>
+      <p>בחר מניה מהרשימה לצפייה בפרטים</p>
+      <p style="font-size:12px; color: var(--muted); margin-top:4px">AAPL, MSFT, NVDA, TSLA, AMZN, META, GOOGL...</p>
+    </div>
+    <div id="detailContent" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ALERTS MODAL -->
+<div class="modal-bg" id="alertsModal" onclick="if(event.target===this)closeAlertsModal()">
+  <div class="modal">
+    <h3>🔔 כל ההתראות</h3>
+    <div class="all-alerts-list" id="allAlertsList"></div>
+    <button class="modal-close" onclick="closeAlertsModal()">סגור</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DB = {
+  AAPL: { name:'Apple Inc.', price:213.49, change:1.24, pe:33.2, mktCap:'3.27T', vol:'52.1M', h52:237.23, l52:164.08, div:'0.56%', eps:6.43, rev:'391B', gross:'46.2%', exchange:'NASDAQ', sector:'Technology', sentiment:78 },
+  MSFT: { name:'Microsoft Corp.', price:415.32, change:-0.87, pe:36.1, mktCap:'3.09T', vol:'18.4M', h52:468.35, l52:362.90, div:'0.72%', eps:11.50, rev:'228B', gross:'69.8%', exchange:'NASDAQ', sector:'Technology', sentiment:82 },
+  NVDA: { name:'NVIDIA Corp.', price:875.40, change:3.21, pe:66.8, mktCap:'2.15T', vol:'214.7M', h52:974.00, l52:461.61, div:'0.03%', eps:13.11, rev:'96B', gross:'72.7%', exchange:'NASDAQ', sector:'Semiconductors', sentiment:91 },
+  TSLA: { name:'Tesla Inc.', price:242.84, change:-2.15, pe:59.3, mktCap:'776.4B', vol:'98.2M', h52:299.29, l52:138.80, div:'N/A', eps:4.10, rev:'97B', gross:'17.9%', exchange:'NASDAQ', sector:'EV / Auto', sentiment:55 },
+  AMZN: { name:'Amazon.com Inc.', price:192.45, change:0.73, pe:43.5, mktCap:'2.04T', vol:'34.8M', h52:201.20, l52:151.61, div:'N/A', eps:4.42, rev:'575B', gross:'49.4%', exchange:'NASDAQ', sector:'E-Commerce', sentiment:80 },
+  GOOGL: { name:'Alphabet Inc.', price:176.90, change:-0.44, pe:22.4, mktCap:'2.17T', vol:'22.3M', h52:193.31, l52:130.67, div:'0.48%', eps:7.90, rev:'350B', gross:'57.3%', exchange:'NASDAQ', sector:'Technology', sentiment:75 },
+  META:  { name:'Meta Platforms', price:508.22, change:1.89, pe:27.9, mktCap:'1.29T', vol:'15.6M', h52:589.32, l52:393.62, div:'0.35%', eps:18.20, rev:'134B', gross:'80.6%', exchange:'NASDAQ', sector:'Social Media', sentiment:84 },
+  NFLX:  { name:'Netflix Inc.', price:912.67, change:-1.02, pe:49.8, mktCap:'392.1B', vol:'4.2M', h52:1064.50, l52:555.14, div:'N/A', eps:18.32, rev:'39B', gross:'45.8%', exchange:'NASDAQ', sector:'Streaming', sentiment:70 },
+  AMD:   { name:'Advanced Micro Devices', price:158.23, change:2.44, pe:288, mktCap:'256B', vol:'56.3M', h52:227.30, l52:141.02, div:'N/A', eps:0.55, rev:'23B', gross:'47.3%', exchange:'NASDAQ', sector:'Semiconductors', sentiment:77 },
+  INTC:  { name:'Intel Corp.', price:31.45, change:-0.63, pe:null, mktCap:'134B', vol:'42.1M', h52:51.28, l52:18.51, div:'2.12%', eps:-4.38, rev:'53B', gross:'32.1%', exchange:'NASDAQ', sector:'Semiconductors', sentiment:38 },
+};
+
+const NEWS = {
+  AAPL: [
+    { src:'Reuters', title:'Apple announces record-breaking App Store revenue in Q4', time:'לפני שעתיים' },
+    { src:'Bloomberg', title:'iPhone 17 production begins in Taiwan amid supply chain shifts', time:'לפני 5 שעות' },
+    { src:'CNBC', title:'Apple Intelligence features expanding to 40 new markets in Q2', time:'אתמול' },
+  ],
+  NVDA: [
+    { src:'Bloomberg', title:'NVIDIA Blackwell GPU demand far exceeds current supply capacity', time:'לפני שעה' },
+    { src:'CNBC', title:'Jensen Huang: AI spending cycle is just beginning, no slowdown in sight', time:'לפני 3 שעות' },
+    { src:'Reuters', title:'NVIDIA secures deal to supply 600,000 GPUs to new European data center', time:'אתמול' },
+  ],
+  TSLA: [
+    { src:'Electrek', title:'Tesla Cybertruck production ramp accelerates significantly in Q1 2025', time:'לפני שעתיים' },
+    { src:'Bloomberg', title:'FSD v13 rollout expands to UK and Germany market', time:'לפני 6 שעות' },
+    { src:'Reuters', title:'Tesla energy storage deployments hit new quarterly record at 4.1 GWh', time:'אתמול' },
+  ],
+};
+
+const DEFAULT_NEWS = [
+  { src:'Reuters', title:'Fed holds rates steady as inflation data comes in softer than expected', time:'לפני שעה' },
+  { src:'Bloomberg', title:'Tech sector leads S&P 500 gains amid strong earnings season', time:'לפני 4 שעות' },
+  { src:'CNBC', title:'Institutional investors increase exposure to US equities in Q1', time:'אתמול' },
+];
+
+let watchlist = ['AAPL','NVDA','TSLA'];
+let selected = null;
+let chart = null;
+let currentRange = '1M';
+let alerts = []; // { id, ticker, type:'above'|'below', price, triggered }
+let alertIdCounter = 1;
+
+function generateData(ticker, range) {
+  const base = DB[ticker]?.price || 100;
+  const pts = {  '1D':48, '1W':7, '1M':30, '3M':90, '1Y':252 }[range];
+  const vols = { '1D':0.005, '1W':0.015, '3M':0.025, '1Y':0.03, '1M':0.02 }[range];
+  const seed = ticker.charCodeAt(0) + ticker.charCodeAt(1);
+  const data = [];
+  let p = base * (0.88 + (seed % 20) * 0.01);
+  for (let i = 0; i < pts; i++) {
+    const rnd = Math.sin(i * seed * 0.37) * 0.5 + (Math.random() - 0.48);
+    p *= (1 + rnd * vols);
+    data.push(+p.toFixed(2));
+  }
+  data[data.length - 1] = base;
+  return data;
+}
+
+function generateLabels(range) {
+  const pts = { '1D':48, '1W':7, '1M':30, '3M':90, '1Y':252 }[range];
+  const daysBack = { '1D':1, '1W':7, '1M':30, '3M':90, '1Y':365 }[range];
+  const labels = [];
+  const now = new Date();
+  for (let i = pts-1; i >= 0; i--) {
+    const d = new Date(now - i * (daysBack/pts) * 86400000);
+    if (range === '1D') labels.push(d.getHours()+':00');
+    else if (range === '1Y') labels.push(d.toLocaleDateString('en',{month:'short',year:'2-digit'}));
+    else labels.push(d.toLocaleDateString('en',{month:'short',day:'numeric'}));
+  }
+  return labels;
+}
+
+function renderSidebar() {
+  const list = document.getElementById('stockList');
+  document.getElementById('countBadge').textContent = watchlist.length;
+  if (watchlist.length === 0) {
+    list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">הוסף מניה לרשימה</div>';
+    return;
+  }
+  list.innerHTML = watchlist.map(t => {
+    const s = DB[t];
+    if (!s) return '';
+    const pos = s.change >= 0;
+    const hasAlerts = alerts.some(a => a.ticker === t);
+    return `<div class="stock-row ${selected===t?'active':''}" onclick="selectStock('${t}')">
+      <div class="row-del" onclick="event.stopPropagation();removeStock('${t}')"><span>✕</span></div>
+      <div class="stock-row-left">
+        <div class="row-ticker">${t} ${hasAlerts?'<div class="alert-dot"></div>':''}</div>
+        <div class="row-name">${s.name}</div>
+      </div>
+      <div class="row-right">
+        <div class="row-price">$${s.price.toFixed(2)}</div>
+        <div class="row-chg ${pos?'pos':'neg'}">${pos?'+':''}${s.change}%</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectStock(ticker) {
+  selected = ticker;
+  renderSidebar();
+  renderDetail();
+}
+
+function renderDetail() {
+  const s = DB[selected];
+  if (!s) return;
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('detailContent').style.display = 'block';
+
+  const pos = s.change >= 0;
+  const tickerAlerts = alerts.filter(a => a.ticker === selected);
+  const sentColor = s.sentiment >= 70 ? 'var(--green)' : s.sentiment >= 50 ? 'var(--amber)' : 'var(--red)';
+  const sentLabel = s.sentiment >= 70 ? 'חיובי' : s.sentiment >= 50 ? 'נייטרלי' : 'שלילי';
+
+  const news = NEWS[selected] || DEFAULT_NEWS;
+
+  document.getElementById('detailContent').innerHTML = `
+    <div class="detail-hero">
+      <div class="detail-left">
+        <h1>${s.name}</h1>
+        <div class="sub">
+          <span style="font-family:JetBrains Mono,monospace;color:var(--cyan)">${selected}</span>
+          <span class="tag">${s.exchange}</span>
+          <span class="tag">${s.sector}</span>
+        </div>
+      </div>
+      <div class="detail-right">
+        <div class="big-price" style="color:${pos?'var(--green)':'var(--red)'}">$${s.price.toFixed(2)}</div>
+        <div class="big-chg">
+          <span class="chg-pill" style="background:${pos?'var(--green2)':'var(--red2)'};color:${pos?'var(--green)':'var(--red)'}">${pos?'▲':'▼'} ${Math.abs(s.change)}%</span>
+          <span style="color:var(--muted);font-size:11px">היום</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sentiment-bar">
+      <div class="sent-label">סנטימנט שוק</div>
+      <div class="sent-track"><div class="sent-fill" style="width:${s.sentiment}%;background:${sentColor}"></div></div>
+      <div class="sent-val" style="color:${sentColor}">${sentLabel} ${s.sentiment}%</div>
+    </div>
+
+    <div class="fund-grid">
+      <div class="fund-card">
+        <div class="fund-label">שווי שוק</div>
+        <div class="fund-val">$${s.mktCap}</div>
+      </div>
+      <div class="fund-card">
+        <div class="fund-label">P/E</div>
+        <div class="fund-val">${s.pe ?? 'N/A'}</div>
+      </div>
+      <div class="fund-card">
+        <div class="fund-label">EPS</div>
+        <div class="fund-val" style="color:${s.eps>0?'var(--green)':'var(--red)'}">$${s.eps}</div>
+      </div>
+      <div class="fund-card">
+        <div class="fund-label">נפח מסחר</div>
+        <div class="fund-val">${s.vol}</div>
+      </div>
+      <div class="fund-card">
+        <div class="fund-label">52W גבוה / נמוך</div>
+        <div class="fund-val" style="font-size:13px"><span class="pos">$${s.h52}</span> / <span class="neg">$${s.l52}</span></div>
+      </div>
+      <div class="fund-card">
+        <div class="fund-label">רווח גולמי</div>
+        <div class="fund-val">${s.gross}</div>
+      </div>
+      <div class="fund-card">
+        <div class="fund-label">הכנסות שנתיות</div>
+        <div class="fund-val">$${s.rev}</div>
+      </div>
+      <div class="fund-card">
+        <div class="fund-label">דיבידנד</div>
+        <div class="fund-val">${s.div}</div>
+      </div>
+      <div class="fund-card">
+        <div class="fund-label">שינוי יומי</div>
+        <div class="fund-val ${pos?'pos':'neg'}">${pos?'+':''}${s.change}%</div>
+      </div>
+    </div>
+
+    <div class="chart-panel">
+      <div class="chart-top">
+        <div class="chart-stats">
+          <div class="cstat">פתיחה: <span>$${(s.price*(1-s.change/100*0.97)).toFixed(2)}</span></div>
+          <div class="cstat">ממוצע: <span>$${((s.h52+s.l52)/2).toFixed(2)}</span></div>
+        </div>
+        <div class="range-group" id="rangeGroup">
+          ${['1D','1W','1M','3M','1Y'].map(r=>`<button class="rtab ${r===currentRange?'active':''}" onclick="setRange('${r}',this)">${r}</button>`).join('')}
+        </div>
+      </div>
+      <div class="chart-box"><canvas id="priceChart"></canvas></div>
+    </div>
+
+    <div class="alerts-panel">
+      <div class="panel-head">
+        <div class="panel-title">🔔 התראות מחיר <span style="font-family:JetBrains Mono,monospace;color:var(--cyan);font-size:12px">${selected}</span></div>
+      </div>
+      <div class="add-alert-form">
+        <select id="alertType">
+          <option value="above">מעל ▲</option>
+          <option value="below">מתחת ▼</option>
+        </select>
+        <input type="number" id="alertPrice" placeholder="${s.price.toFixed(0)}" step="0.01" />
+        <button class="mini-btn" onclick="addAlert()">+ הוסף התראה</button>
+      </div>
+      <div class="alerts-list" id="alertsList">
+        ${tickerAlerts.length === 0 ? '<div style="font-size:12px;color:var(--muted);text-align:center;padding:8px">אין התראות פעילות</div>' : ''}
+      </div>
+    </div>
+
+    <div class="news-panel">
+      <div class="panel-head">
+        <div class="panel-title">📰 חדשות אחרונות</div>
+      </div>
+      ${news.map(n=>`
+        <div class="news-item">
+          <div class="news-src">${n.src}</div>
+          <div class="news-body">
+            <div class="news-title">${n.title}</div>
+            <div class="news-time">${n.time}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  renderAlertsList();
+  drawChart();
+}
+
+function drawChart() {
+  if (chart) { chart.destroy(); chart = null; }
+  const canvas = document.getElementById('priceChart');
+  if (!canvas) return;
+  const s = DB[selected];
+  const data = generateData(selected, currentRange);
+  const labels = generateLabels(currentRange);
+  const isUp = data[data.length-1] >= data[0];
+  const color = isUp ? '#10b981' : '#ef4444';
+
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createLinearGradient(0,0,0,220);
+  grad.addColorStop(0, isUp ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{ data, borderColor:color, borderWidth:1.5, backgroundColor:grad, fill:true, tension:0.4, pointRadius:0, pointHoverRadius:3, pointHoverBackgroundColor:color }] },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ intersect:false, mode:'index' },
+      plugins: {
+        legend:{ display:false },
+        tooltip:{
+          backgroundColor:'#141b27', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
+          titleColor:'#556070', bodyColor:'#dde4f0',
+          bodyFont:{ family:"'JetBrains Mono', monospace", size:12 },
+          titleFont:{ size:10 },
+          callbacks:{ label: ctx=>'$'+ctx.raw.toFixed(2) }
+        }
+      },
+      scales:{
+        x:{ ticks:{ color:'#556070', font:{size:10}, maxTicksLimit:6 }, grid:{ color:'rgba(255,255,255,0.04)' }, border:{ display:false } },
+        y:{ position:'right', ticks:{ color:'#556070', font:{family:"'JetBrains Mono',monospace",size:10}, callback:v=>'$'+v.toFixed(0) }, grid:{ color:'rgba(255,255,255,0.04)' }, border:{ display:false } }
+      }
+    }
+  });
+}
+
+function setRange(r, btn) {
+  currentRange = r;
+  document.querySelectorAll('.rtab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  drawChart();
+}
+
+function addAlert() {
+  const type = document.getElementById('alertType').value;
+  const price = parseFloat(document.getElementById('alertPrice').value);
+  if (!price || isNaN(price)) { showToast('הכנס מחיר תקין'); return; }
+  alerts.push({ id: alertIdCounter++, ticker: selected, type, price, triggered: false });
+  document.getElementById('alertPrice').value = '';
+  renderAlertsList();
+  updateAlertBadge();
+  showToast(`✓ התראה נוספה: ${selected} ${type==='above'?'מעל':'מתחת'} $${price}`);
+  checkAlerts();
+}
+
+function renderAlertsList() {
+  const el = document.getElementById('alertsList');
+  if (!el) return;
+  const tickerAlerts = alerts.filter(a => a.ticker === selected);
+  if (tickerAlerts.length === 0) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:8px">אין התראות פעילות</div>';
+    return;
+  }
+  el.innerHTML = tickerAlerts.map(a => `
+    <div class="alert-item ${a.triggered?'triggered':''}">
+      <div class="alert-info">
+        <span class="alert-type-badge ${a.type==='above'?'badge-above':'badge-below'}">${a.type==='above'?'▲ מעל':'▼ מתחת'}</span>
+        <span class="alert-desc"><strong>$${a.price.toFixed(2)}</strong> · נוכחי: $${DB[selected].price.toFixed(2)}</span>
+      </div>
+      ${a.triggered ? '<span class="triggered-label">⚡ הופעל</span>' : ''}
+      <button class="del-alert" onclick="deleteAlert(${a.id})">✕</button>
+    </div>
+  `).join('');
+}
+
+function deleteAlert(id) {
+  alerts = alerts.filter(a => a.id !== id);
+  renderAlertsList();
+  renderSidebar();
+  updateAlertBadge();
+}
+
+function checkAlerts() {
+  alerts.forEach(a => {
+    const s = DB[a.ticker];
+    if (!s) return;
+    const oldTriggered = a.triggered;
+    if (a.type === 'above' && s.price >= a.price) a.triggered = true;
+    if (a.type === 'below' && s.price <= a.price) a.triggered = true;
+    if (a.triggered && !oldTriggered) {
+      showToast(`🔔 התראה: ${a.ticker} ${a.type==='above'?'עברה מעל':'ירדה מתחת'} $${a.price}`);
+    }
+  });
+  if (selected) renderAlertsList();
+  updateAlertBadge();
+  renderSidebar();
+}
+
+function updateAlertBadge() {
+  const badge = document.getElementById('alertBadge');
+  const n = alerts.length;
+  badge.style.display = n > 0 ? 'flex' : 'none';
+  badge.textContent = n;
+}
+
+function openAlertsModal() {
+  const modal = document.getElementById('alertsModal');
+  const list = document.getElementById('allAlertsList');
+  modal.classList.add('open');
+  if (alerts.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px">אין התראות פעילות</div>';
+    return;
+  }
+  list.innerHTML = alerts.map(a => `
+    <div class="alert-item ${a.triggered?'triggered':''}">
+      <div class="alert-info">
+        <span class="alert-type-badge ${a.type==='above'?'badge-above':'badge-below'}">${a.type==='above'?'▲':'▼'}</span>
+        <span class="alert-desc"><strong>${a.ticker}</strong> ${a.type==='above'?'מעל':'מתחת'} $${a.price.toFixed(2)}</span>
+      </div>
+      ${a.triggered ? '<span class="triggered-label">⚡ הופעל</span>' : ''}
+      <button class="del-alert" onclick="deleteAlert(${a.id});openAlertsModal()">✕</button>
+    </div>
+  `).join('');
+}
+
+function closeAlertsModal() {
+  document.getElementById('alertsModal').classList.remove('open');
+}
+
+function addStock() {
+  const input = document.getElementById('searchInput');
+  const ticker = input.value.trim().toUpperCase();
+  if (!ticker) return;
+  if (!DB[ticker]) { showToast('מניה לא נמצאה. נסה: AAPL, MSFT, NVDA...'); return; }
+  if (watchlist.includes(ticker)) { showToast('המניה כבר ברשימה'); selectStock(ticker); return; }
+  watchlist.push(ticker);
+  input.value = '';
+  renderSidebar();
+  selectStock(ticker);
+  showToast('✓ ' + ticker + ' נוסף לרשימה');
+}
+
+function removeStock(ticker) {
+  watchlist = watchlist.filter(t => t !== ticker);
+  if (selected === ticker) {
+    selected = null;
+    document.getElementById('emptyState').style.display = 'flex';
+    document.getElementById('detailContent').style.display = 'none';
+  }
+  renderSidebar();
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+document.getElementById('searchInput').addEventListener('keydown', e => { if(e.key==='Enter') addStock(); });
+
+// Simulate live price updates
+setInterval(() => {
+  Object.keys(DB).forEach(t => {
+    const s = DB[t];
+    const delta = (Math.random() - 0.5) * 0.04;
+    s.price = +(s.price * (1 + delta * 0.01)).toFixed(2);
+  });
+  renderSidebar();
+  if (selected) {
+    const s = DB[selected];
+    const el = document.querySelector('.big-price');
+    if (el) {
+      const pos = s.change >= 0;
+      el.textContent = '$' + s.price.toFixed(2);
+      el.style.color = pos ? 'var(--green)' : 'var(--red)';
+    }
+  }
+  checkAlerts();
+}, 4000);
+
+// init
+renderSidebar();
+selectStock('NVDA');
+</script>
+</body>
+</html>
